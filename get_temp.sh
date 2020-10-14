@@ -1,22 +1,32 @@
 #!/bin/bash
 # Provides CPU and GPU temperature
-clockSpeed="$(/usr/bin/vcgencmd measure_clock arm)"
-vc="/usr/bin/vcgencmd"
-#getCelsius () {
-	# Function is in progress, does not work.
-	#cNum=$(/usr/bin/vcgencmd measure_temp | grep -Eo '[0-9]')
-	#echo $cNum
-#}
+# Provide time in minutes to run for that amount of time
+clockSpeed="$(/usr/bin/sudo cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq)"
 getFahrenheit () {
-	#fDegree="(($(/usr/bin/vcgencmd measure_tmp) * (( 9 / 5 )) + 32 ))"
-	#echo "$fDegree"
 	cpuTemp="$(</sys/class/thermal/thermal_zone0/temp)"
 	echo "CPU: $((cpuTemp / 1000)) c"
 	fDegree=$(( $((cpuTemp / 1000)) * 9/5 + 32))
 	echo "CPU: $(( $((cpuTemp / 1000)) * 9/5 + 32)) f"
 }
-#getCelsius
-echo "========================================================="
-echo "$HOSTNAME clockspeed: $clockSpeed"
-getFahrenheit
+hostInfo () {
+	echo "Hostname: $HOSTNAME CPU clockrate: $clockSpeed MHz"
+	echo "========================================================="
+}
+if [[ $1 -gt 0 ]]; then
+	counter=$(( $1 * 60 ))
+	condition=$(( $1 * 2 ))
+	echo "Executing for $1 minutes..."
+	for (( i = 0; i < $condition; i++ )); do
+		echo "$counter seconds remaining."
+		getFahrenheit
+		date +%T\ %F
+		hostInfo
+		sleep "30"
+		counter=$(( $counter-30 ))
+	done
+else
+
+	getFahrenheit; date +%T\ %F
+	hostInfo
+fi
 exit 0
