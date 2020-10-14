@@ -32,7 +32,8 @@ if [[ $1 -gt 0 ]]; then
 	hostInfo
 else
 
-	getFahrenheit; date +%T\ %F
 	hostInfo
+        echo "$time"
+	getFahrenheit
 fi
 exit 0
