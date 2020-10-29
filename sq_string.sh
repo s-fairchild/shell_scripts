@@ -4,14 +4,19 @@
 oper () {
 	local fct=$1
 	local s=$2
-	if [ $fct == "vert_mirror" ]
-	then
-		IFS=',' read -ra sArr <<< "$s"
+	IFS=',' read -ra origArr <<< "$s"
+
+	if [ $fct == "vert_mirror" ]; then
+		for ((i=0; i < ${#origArr[@]}; i++)); do
+		sArr[$i]=$(echo ${sArr[$i]} | rev)
+	done
+	#elif [ $fct == "hor_mirror" ]; then
+		
 	fi
 
 	for item in ${sArr[@]}
 	do
-		printf "   %s\n" $(echo $item | rev)
+		printf "   %s\n" $item
 	done
 }
 echo "original string: $2"
