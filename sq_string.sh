@@ -14,12 +14,12 @@ horMirror() {
 }
 oper() {
 	IFS=',' read -ra origArr <<< $2
-	if [ $1 == "vertMirror," ]; then
+	if [ $1 == "vertMirror" ] && [ ! -z $1 ]; then
 		final=$(vertMirror)
-	elif [ $1 == "horMirror," ]; then
+	elif [ $1 == "horMirror" ] && [ ! -z $1 ]; then
 		final=$(horMirror)
 	else
-		echo "error"
+		echo "You must enter either vertMirror or horMirror followed be the string."
 	fi
 	echo $final
 }
