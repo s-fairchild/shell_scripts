@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 vertMirror() {
 	for ((i=0; i < ${#origArr[@]}; i++)); do
                 sArr[$i]=$(echo ${origArr[$i]} | rev)
@@ -14,9 +14,9 @@ horMirror() {
 }
 oper() {
 	IFS=',' read -ra origArr <<< $2
-	if [ $1 == "vert_mirror" ]; then
+	if [ $1 == "vertMirror" ]; then
 		local output=$(vertMirror)
-	elif [ $1 == "hor_mirror" ]; then
+	elif [ $1 == "horMirror" ]; then
 		local output=$(horMirror)
 	fi
 	for i in ${output[@]}; do
