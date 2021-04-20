@@ -33,23 +33,23 @@ mysqldump --opt --user=${USER} --password=${PASS} ${DATABASE} > ${FILE}
 
 # Gzip compress and create sha1 hash
 pigz -q $FILE
-sha1sum $FILE > $FILE.sha1
+sha1sum $FILE.gz > $FILE.gz.sha1
 
 # Delete backups if they already exist for today
-if [[ -f "$BPATH/$FILE.gz" ]] || [[ -f "$BPATH/$FILE.sha1sum" ]]; then
+if [[ -f "$BPATH/$FILE.gz" ]] || [[ -f "$BPATH/$FILE.gz.sha1sum" ]]; then
     rm "$BPATH/$FILE.gz"
-    rm "$BPATH/$FILE.sha1sum"
+    rm "$BPATH/$FILE.gz.sha1"
 fi
 
 # Move to permanent backup directory
 mv $FILE.gz $BPATH
-mv $FILE.sha1 $BPATH
+mv $FILE.gz.sha1 $BPATH
 
 echo "Successfully created backup of $DATABASE located at $BPATH/$FILE.gz"
 logger "Successfully created backup of $DATABASE located at $BPATH/$FILE.gz"
-echo "${red}Deleting files older than $KEEP_DAYS days in $BPATH${creset}"
+echo -e "${red}Deleting files older than $KEEP_DAYS days in $BPATH${creset}"
 find "$BPATH" -mtime +"$KEEP_DAYS" -print
-echo "${red}Files shown will be deleted${creset}"
+echo -e "${red}Files shown will be deleted${creset}"
 find "$BPATH" -mtime +"$KEEP_DAYS" -delete
 logger "Deleted files older than $KEEP_DAYS days in $BPATH"
 cd - # Return to original directory
