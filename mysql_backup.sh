@@ -10,6 +10,8 @@ fi
 if [[ -z "$1" ]]; then
     echo -e "database name must be passed as first aurguement\nExiting..."
     exit 0
+elif [[ "$1" == "--all-databases" ]]; then
+    1="all_databases"
 fi
 
 cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
@@ -18,7 +20,7 @@ cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is h
 # Set database and file variables
 DATABASE=$1
 BPATH=/data/backups/mariadb/$DATABASE
-FILE=$DATABASE-$(date +%F).sql
+FILE=$DATABASE-$(date +%F).dump
 USER="root"
 PASS="password"
 KEEP_DAYS="30"
@@ -29,7 +31,11 @@ if [[ ! -d "$BPATH" ]]; then
 fi
 
 # create dump file
-mysqldump --opt --user=${USER} --password=${PASS} ${DATABASE} > ${FILE}
+if [[ "$DATABASE" != "all_databases" ]]; then
+    mysqldump --opt --user=${USER} --password=${PASS} --all-databases > ${FILE}
+else
+    mysqldump --opt --user=${USER} --password=${PASS} ${DATABASE} > ${FILE}
+fi
 
 # Gzip compress and create sha1 hash
 pigz -q $FILE
