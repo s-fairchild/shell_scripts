@@ -12,10 +12,14 @@ get_f () {
 vcgencmd get_config int | egrep "(arm|core|gpu|sdram)_freq|over_volt"
 
 # Measure clock speeds
-for src in arm core h264 isp v3d; do echo -e "$src:\t$(vcgencmd measure_clock $src)"; done
+for src in arm core h264 isp v3d; do 
+    echo -e "$src:\t$(vcgencmd measure_clock $src)"
+done
 
 # Measure Volts
-for id in core sdram_c sdram_i sdram_p ; do echo -e "$id:\t$(vcgencmd measure_volts $id)"; done
+for id in core sdram_c sdram_i sdram_p; do 
+    echo -e "$id:\t$(vcgencmd measure_volts $id)"
+done
 
 # Measure Temperature
 vcgencmd measure_temp
