@@ -21,8 +21,18 @@ cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is h
 DATABASE=$1
 BPATH=/data/backups/mariadb/$DATABASE
 FILE=$DATABASE-$(date +%F).dump
-USER="root"
-PASS="password"
+if [[ ! -z "$2" ]]; then
+    echo "Using $2 as database user"
+    USER="$2"
+else
+    USER="root"
+fi
+if [[ ! -z "$3" ]]; then
+    echo "Using $3 as user password"
+    PASS="$3"
+else
+    PASS="password"
+fi
 KEEP_DAYS="30"
 
 # Create backup folder if it doesn't exist
@@ -59,4 +69,5 @@ echo -e "${red}Files shown will be deleted${creset}"
 find "$BPATH" -mtime +"$KEEP_DAYS" -delete
 logger "Deleted files older than $KEEP_DAYS days in $BPATH"
 cd - # Return to original directory
+history -c # stop history from saving password if provided
 exit 0
