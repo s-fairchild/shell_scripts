@@ -41,7 +41,7 @@ if [[ ! -d "$BPATH" ]]; then
 fi
 
 # create dump file
-if [[ "$DATABASE" != "all_databases" ]]; then
+if [[ "$DATABASE" == "all_databases" ]]; then
     mysqldump --opt --user=${USER} --password=${PASS} --all-databases > ${FILE}
 else
     mysqldump --opt --user=${USER} --password=${PASS} ${DATABASE} > ${FILE}
