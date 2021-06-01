@@ -4,6 +4,7 @@
 
 # Set database and file variables
 set_vars() {
+    export SECONDS=0
     export DATABASE=$1
     export BPATH="/data/raid1/backups/mariadb/"
     export USER="root"
@@ -46,6 +47,17 @@ usage() {
     \t\tEdit this script to change default settings\n"
 }
 
+elapsed_time() {
+    MINUTES=$(echo "scale=2;$SECONDS/60" | bc -l)
+    if [[ "$MINUTES" == 0 ]]; then
+        logger -t "mysql_backup.sh" "Completed in ${SECONDS} seconds"
+        echo "Completed in ${SECONDS} seconds"
+    else
+        logger -t "mysql_backup.sh" "Completed in ${MINUTES} minutes"
+        echo "Completed in ${MINUTES} minutes"
+    fi
+}
+
 main() {
     cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
         # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
@@ -78,6 +90,7 @@ main() {
     logger -t "mysql_backup.sh" "Deleted files older than ${KEEP_DAYS} days in ${BPATH}"
     cd - # Return to original directory
     history -c # stop history from saving password if provided
+    elapsed_time
 }
 
 if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
