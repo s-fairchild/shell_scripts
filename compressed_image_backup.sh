@@ -7,9 +7,14 @@ img_dest="/data/raid5/backups/local_images"
 img_name="$(hostname)_src_dev_$(date +%F)"
 img_final="${img_dest}/${img_name}.img.gz"
 img_hash="${img_final}.sha256"
-# Number of days to keep backup files. Files older than X days will be deleted. Set to -1 to keep forever.
-keep_days=30
-# DO NOT CHANGE. Used for elapsed time measurement.
+# Boolean value, set to 1 to enable cleanup, 0 to disable
+enable_cleanup=1
+# Number of days to keep backup files. Ignored if enable_cleanup is 0
+# Do not set to negative number, all files will be deleted
+if [[ ${enable_cleanup} == 1 ]]; then
+    keep_days=30
+fi
+# DO NOT CHANGE. Used for elapsed time measurement
 SECONDS=0
 
 # Set logger tag and make backup destination directory
@@ -34,19 +39,19 @@ make_hash() {
     fi
 }
 cleanup_backups() {
-    if [[ keep_days > 0 ]]; then
-        files=$(find ${img_dest} -mtime +${keep_days})
-        if [[ ! -z $files ]]; then
-            logger -p info "Deleting these files..."
-            for file in $files; do
-                logger -p info "Deleting - ${file}"
-            done
-            if find ${img_dest} -mtime +${keep_days} -delete; then
-                logger -p info "Successfully deleted backup images older than ${keep_days}"
-            else
-                logger -s -p err "Failed to delete backup images older than ${keep_days}"
-            fi
+    files=$(find ${img_dest} -mtime +${keep_days})
+    if [[ ! -z $files ]]; then
+        logger -p info "Deleting these files..."
+        for file in $files; do
+            logger -p info "Deleting - ${file}"
+        done
+        if find ${img_dest} -mtime +${keep_days} -delete; then
+            logger -p info "Successfully deleted backup images older than ${keep_days}"
+        else
+            logger -s -p err "Failed to delete backup images older than ${keep_days}"
         fi
+    else
+        logger -p info "No image files older than ${keep_days} days were found"
     fi
 }
 elapsed_time() {
@@ -63,7 +68,11 @@ main() {
     elapsed_time ${img_final}
     make_hash
     elapsed_time ${img_hash}
-    cleanup_backups
+    if [[ ${enable_cleanup} == 1 ]]; then
+        cleanup_backups
+    elif [[ ${enable_cleanup} == 0 ]]; then
+        logger -p info "Cleanup of older image files is disabled, set enabled_cleanup=1 to enable"
+    fi
 }
 
 if main; then
