@@ -31,7 +31,6 @@ if [[ $1 -gt 0 ]]; then
         getFahrenheit	
 	hostInfo
 else
-
 	hostInfo
         echo "$time"
 	getFahrenheit
