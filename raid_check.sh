@@ -6,7 +6,7 @@
 array="md0"
 
 if echo check > /sys/block/${array}/md/sync_action; then
-    logger -p cron.err "Successfully started check on ${array}"
+    logger -p cron.info "Successfully started check on ${array}"
     exit 0
 else
     logger -s -p cron.err "Error starting filesystem check for ${array}"
