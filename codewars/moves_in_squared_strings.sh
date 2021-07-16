@@ -15,7 +15,7 @@ diag_1_sym() {
     done
     for ((j=0; j<=${#blocks[0]}; j++)); do
         for ((i=0; i<=${#blocks[@]}; i++)); do
-            str+=${blocks[$i]:$j:1}
+            str+="${blocks[$i]:$j:1}"
         done
         if [[ $j -lt $((${#blocks[0]} - 1)) ]]; then
             str+="\r"
