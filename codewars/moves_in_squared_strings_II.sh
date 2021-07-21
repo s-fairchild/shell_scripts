@@ -1,19 +1,30 @@
 #!/bin/bash
 # Steven Fairchild 2021-07-21
 # Moves in squared strings (II) https://www.codewars.com/kata/56dbe7f113c2f63570000b86
-
-# "rot", "fijuoo,CqYVct,DrPmMJ,erfpBA,kWjFUG,CVUfyL", "LyfUVC\rGUFjWk\rABpfre\rJMmPrD\rtcVYqC\rooujif"
+# Not used
+# repeat() {
+#     for ((i="$1"; i>0; i--)); do
+#         echo -n '.'
+#     done
+# }
 rot() {
-    echo "Not Implimented yet."
+    IFS=',' read -ra arr <<< "$1"
+    i=0
+    for ((j=((${#arr[@]} - 1)); j>=0; j--)); do
+        nArr[$i]="$(rev < <(echo ${arr[$j]}))"
+        ((i=i+1))
+    done
+    echo "$(echo ${nArr[@]} | tr ' ' '\r')"
 }
-# selfieAndRot" "xZBV,jsbS,JcpN,fVnP" "xZBV....\rjsbS....\rJcpN....\rfVnP....\r....PnVf\r....NpcJ\r....Sbsj\r....VBZx"
 selfieAndRot() {
     IFS=',' read -ra arr <<< "$1"
     for i in ${!arr[@]}; do
-        arr[$i]="${arr[$i]}...."
+        for ((j="${#arr[@]}"; j>0; j--)); do
+            arr[$i]+='.'
+        done
     done
-    declare -a results; i="${#arr[@]}"
-    for ((j=((${#arr[@]} - 1)); j>=0; j--)); do
+    i="${#arr[@]}"
+    for ((j=${#arr[@]}; j>=0; j--)); do
         arr[$i]="$(rev < <(echo ${arr[$j]}))"
         ((i=i+1))
     done
