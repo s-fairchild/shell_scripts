@@ -10,16 +10,14 @@ rot() {
 selfieAndRot() {
     IFS=',' read -ra arr <<< "$1"
     for i in ${!arr[@]}; do
-        str+="${arr[$i]}....\r"
+        arr[$i]="${arr[$i]}...."
     done
-    str+="...."
+    declare -a results; i="${#arr[@]}"
     for ((j=((${#arr[@]} - 1)); j>=0; j--)); do
-        str+="$(rev < <(echo ${arr[$j]}))"
-        if [[ "$j" != 0 ]]; then
-            str+="\r...."
-        fi
+        arr[$i]="$(rev < <(echo ${arr[$j]}))"
+        ((i=i+1))
     done
-    echo $str
+    echo "$(echo ${arr[@]} | tr ' ' '\r')"
 }
 oper() {
     if [[ "$1" == "rot" ]]; then
