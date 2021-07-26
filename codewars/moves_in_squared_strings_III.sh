@@ -2,7 +2,15 @@
 # Steven Fairchild 2021-07-21
 # "abcd\nefgh\nijkl\nmnop" == "miea\nnjfb\nokgc\nplhd"
 rot_90_clock() {
-    echo "Not Implimented"
+    for sq in "${arr[@]}"; do
+        for (( i="${#arr[@]}"; i>=0; i-- )); do
+            sym["$i"]+="${sq:$i:1}"
+        done
+    done
+    for index in "${!sym[@]}"; do
+        sym["$index"]=$(echo "${sym[$index]}" | rev)
+    done
+    echo "${sym[@]}" | tr ' ' '\r'
 }
 
 # "abcd\nefgh\nijkl\nmnop" == "aeim\nbfjn\ncgko\ndhlp"
