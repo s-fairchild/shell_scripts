@@ -5,7 +5,7 @@
 validate_phone() {
     p=$(echo "$1" | tr -d \( ); p=$(echo "$p" | tr -d \) ); p=($(echo "$p" | tr '-' ' '))
     if [[ "${p[@]}" =~ [:alpha:] ]] || [[ "${#p[@]}" != 3 ]]; then
-        echo "1False"; exit
+        echo "False"; exit
     fi
     for index in ${!p[@]}; do
         if [[ "${p[$index]:0:1}" == 0 ]] && [[ "$index" -eq 0 ]]; then
