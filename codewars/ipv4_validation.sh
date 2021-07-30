@@ -6,8 +6,8 @@ check_leading_zeros() {
     octets=($(echo $1 | tr "." "\n"))
     for octet in ${octets[@]}; do
         echo $octet
-        if [[ "${octet:0:1}" -eq 0 ]] && [[ "${#octet}" -gt 1 ]];
-            then echo "False"
+        if [[ "${octet:0:1}" -eq 0 ]] && [[ "${#octet}" -gt 1 ]]; then
+            echo "False"
         fi
     done
 }
