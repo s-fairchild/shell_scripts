@@ -1,9 +1,8 @@
 #!/bin/bash
 # ROT13 is a simple letter substitution cipher that replaces a letter with the letter 13 letters after it in the alphabet. ROT13 is an example of the Caesar cipher.
+# https://www.codewars.com/kata/530e15517bc88ac656000716/shell
 # Steven Fairchild 2021-08-03
 
-# 65-90 A-Z, 97-122 a-z
-# A="a"; printf '%d\n' "'$A"
 a2i() {
     printf '%d\n' "'$1"
 }
