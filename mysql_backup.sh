@@ -4,27 +4,18 @@
 
 # Set database and file variables
 set_vars() {
-    export SECONDS=0
-    export DATABASE=$1
-    export BPATH="/data/raid1/backups/mariadb/"
-    export USER="root"
-    export PASS="password"
-    export KEEP_DAYS="30"
-
-    export red="\e[1;31m"
-    export creset="\e[0m"
     if [[ -z "$1" ]]; then
         echo -e "database name must be passed as first aurguement\nExiting..."
     exit 0
     fi
-    if [[ ! -z "$2" ]]; then
-        echo "Using $2 as database user"
-        export USER="$2"
-    fi
-    if [[ ! -z "$3" ]]; then
-        echo "Using $3 as user password"
-        export PASS="$3"
-    fi
+    export SECONDS=0
+    export DATABASE=$1
+    export BPATH="/data/raid1/backups/mariadb/"
+    mkdir -p "$BPATH"
+    export KEEP_DAYS="30"
+
+    export red="\e[1;31m"
+    export creset="\e[0m"
 }
 
 root_check() {
@@ -38,13 +29,8 @@ usage() {
     echo -e "Script usage\n\n\
     \t--help or -h: print this message\n\n\
     \tFirst arguement must be database list inside quotes even if only one database is specified\n\
-    \tOptional - second aurguement is the database username\n\
-    \tOptional - third aurguement is database password(will not be saved to bash history)\n\n\
-    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\" database_username database_password\n\
-    \tExample 2: ./mysql_backup.sh \"database1\" database_username database_password\n\
-    \tNOTE:\n\
-    \t\tIf optional aurguments are not given the variables inside this script will be used\n\
-    \t\tEdit this script to change default settings\n"
+    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\"
+    \tExample 2: ./mysql_backup.sh database"
 }
 
 elapsed_time() {
@@ -60,14 +46,11 @@ elapsed_time() {
 
 main() {
     cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
-        # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
-    if [[ ! -d "$BPATH" ]]; then
-        mkdir -p "$BPATH"
-    fi
+            # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
     # create dump file
     for db in $DATABASE; do
         FILE="${db}-$(date +%F).dump"
-        mysqldump --opt --user=${USER} --password=${PASS} ${db} > "${FILE}"
+        mysqldump ${db} > "${FILE}"
         echo "gzipping ${FILE}... this may take some time"
         pigz -q ${FILE}
         if [[ ${?} -eq 0 ]] && [[ -f "${FILE}.gz" ]]; then
