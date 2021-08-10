@@ -48,28 +48,7 @@ elapsed_time() {
     fi
 }
 
-main() {
-    cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
-            # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
-    # create dump file
-    for db in "${DATABASE[@]}"; do
-        FILE="${db}-$(date +%F).dump"
-        mysqldump ${db} > "${FILE}"
-        echo "gzipping ${FILE}... this may take some time"
-        pigz -q ${FILE}
-        if [[ ${?} -eq 0 ]] && [[ -f "${FILE}.gz" ]]; then
-            echo "Successfully compressed ${FILE}.gz"
-            sha1sum "${FILE}.gz" > "${FILE}.gz.sha1"
-            # Move to permanent backup directory
-            mv ${FILE}.gz ${BPATH}
-            mv ${FILE}.gz.sha1 ${BPATH}
-            echo "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
-            logger -t "mysql_backup.sh" "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
-        else
-            echo "Failed to create ${FILE}.gz"
-        fi
-    done
-
+rotate_files() {
     echo -e "${red}Deleting files older than ${KEEP_DAYS} days in ${BPATH}${creset}"
     find "${BPATH}" -mtime +"${KEEP_DAYS}" -print
     echo -e "${red}Files shown will be deleted${creset}"
@@ -80,12 +59,35 @@ main() {
     elapsed_time
 }
 
-if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+make_backups() {
+    cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
+            # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
+    # create dump file
+    for db in "${DATABASE[@]}"; do
+        FILE="${db}-$(date +%F).dump"
+        mysqldump ${db} > "${FILE}"
+        echo "gzipping ${FILE}... this may take some time"
+        pigz -q ${FILE}
+        if [[ "$?" -eq 0 ]] && [[ -f "${FILE}.gz" ]]; then
+            echo "Successfully compressed ${FILE}.gz"
+            sha256sum "${FILE}.gz" > "${FILE}.gz.sha256"
+            # Move to permanent backup directory
+            mv "${FILE}.gz" "${BPATH}"
+            mv "${FILE}.gz.sha256" "${BPATH}"
+            echo "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
+            logger -t "mysql_backup.sh" "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
+        else
+            echo "Failed to create ${FILE}.gz"
+        fi
+    done
+}
+
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ -z "$1" ]]; then
     usage
 else
     root_check
     set_vars "$1"
-    main
+    make_backups
 fi
 
 exit 0
