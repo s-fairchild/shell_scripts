@@ -9,11 +9,14 @@ set_vars() {
         exit 1
     fi
     if [[ -z "$2" ]]; then
-        export BPATH="/data/raid1/backups/mariadb/"
+        usage
+        echo "Second arguement must be the backup destination root folder with no trailing forward slash."
     else
-        BPATH="$2"
+        export BPATH="${2}"
     fi
-    mkdir -p "$BPATH"
+    for d in daily weekly monthly yearly; do
+        mkdir -p "${BPATH}/${d}"
+    done
     export SECONDS=0
     IFS=' ' read -ra DATABASE <<< "$1"
     export KEEP_DAYS="30"
@@ -33,7 +36,7 @@ usage() {
     \t--help or -h: print this message\n\n\
     \tFirst arguement must be database list inside quotes even if only one database is specified\n\
     \tSecond arguement is the backup path. If none is specified then the internal setting is used\n
-    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\" /backup/path
+    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\" /backup/path -- NO TRAILING FORWARD SLASH
     \tExample 2: ./mysql_backup.sh database"
 }
 
@@ -50,32 +53,29 @@ elapsed_time() {
 
 rotate_daily() {
     daily_count="$(( $(ls ${BPATH}/daily | wc -l) / 2 ))"
-    if [[ "$daily_count" -ge 2 ]]; then
-        find "${BPATH}/daily" -iname "*.dump" -mtime 2 -exec mv {} "${BPATH}/weekly" \; 
-        find "${BPATH}/daily" -mtime +1 -delete
+    if [[ "$daily_count" -ge 7 ]]; then
+        find "${BPATH}/daily" -iname "*.dump.gz*" -daystart -mtime -7 | xargs -d "\n" tar -cf "${BPATH}/weekly/${DATABASE}_$(date -d '7 days ago' +%F).tar" &> /dev/null
+        find "${BPATH}/daily" -iname "*.dump.gz*" -daystart -mtime +0 -delete
     fi
 }
 
 rotate_weekly() {
-    weekly_count="$(( $(ls ${BPATH}/weekly | wc -l) / 2 ))"
-    if [[ "$weekly_count" -ge 7 ]]; then
-        find "${BPATH}/weekly" -iname "*.dump" -mtime 7 -exec mv {} "${BPATH}/monthly" \; 
-        find "${BPATH}/weekly" -mtime -7 -delete
+    weekly_count="$(ls ${BPATH}/weekly | wc -l)"
+    if [[ "$weekly_count" -ge 4 ]]; then
+        MBPATH="${BPATH}/monthly/$(date +%B)"
+        mkdir -p "$MBPATH"
+        find "${BPATH}/weekly" -iname "*.tar" -exec mv -t "${MBPATH}" {} \;
     fi
 }
 
 rotate_monthly() {
-    monthly_count="$(( $(ls ${BPATH}/monthly | wc -l) / 2 ))"
-    if [[ "$monthly_count" -ge 30 ]]; then
-        find "${BPATH}/monthly" -iname "*.dump" -mtime 30 -exec mv {} "${BPATH}/yearly" \;
-        find "${BPATH}/monthly" -mtime +30 -delete
+    monthly_count="$(ls ${BPATH}/monthly | wc -l)"
+    if [[ "$monthly_count" -ge 12 ]]; then
+        find "${BPATH}/monthly/$(date +%B)" -iname "*.tar" -daystart -mtime +365 -exec mv -t "${BPATH}/yearly" {} \;
     fi
 }
 
 rotate_files() {
-    for d in daily weekly monthly yearly; do
-        mkdir -p "${BPATH}/${d}"
-    done
     rotate_daily
     rotate_weekly
     rotate_monthly
@@ -88,17 +88,17 @@ make_backups() {
     # create dump file
     for db in "${DATABASE[@]}"; do
         FILE="${db}-$(date +%F).dump"
-        mysqldump ${db} > "${FILE}"
+        mysqldump "${db}" > "${FILE}"
         echo "gzipping ${FILE}... this may take some time"
         pigz -q "${FILE}"
         if [[ "$?" -eq 0 ]] && [[ -f "${FILE}.gz" ]]; then
             echo "Successfully compressed ${FILE}.gz"
             sha256sum "${FILE}.gz" > "${FILE}.gz.sha256"
             # Move to permanent backup directory
-            mv "${FILE}.gz" "${BPATH}"
-            mv "${FILE}.gz.sha256" "${BPATH}"
-            echo "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
-            logger -t "mysql_backup.sh" "Successfully created backup of ${db} located at ${BPATH}${FILE}.gz"
+            mv "${FILE}.gz" "${BPATH}/daily/"
+            mv "${FILE}.gz.sha256" "${BPATH}/daily/"
+            echo "Successfully created backup of ${db} located at ${BPATH}/daily/${FILE}.gz"
+            logger -t "mysql_backup.sh" "Successfully created backup of ${db} located at ${BPATH}/daily/${FILE}.gz"
         else
             echo "Failed to create ${FILE}.gz"
         fi
@@ -111,6 +111,8 @@ else
     root_check
     set_vars "$1" "$2"
     make_backups
+    #rotate_files
+    find "${BPATH}/daily" -mtime +365 -delete
     elapsed_time
 fi
 
