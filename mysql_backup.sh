@@ -6,14 +6,17 @@
 set_vars() {
     if [[ -z "$1" ]]; then
         echo -e "database name must be passed as first aurguement\nExiting..."
-    exit 0
+        exit 1
     fi
-    export SECONDS=0
-    export DATABASE=$1
-    export BPATH="/data/raid1/backups/mariadb/"
+    if [[ -z "$2" ]]; then
+        export BPATH="/data/raid1/backups/mariadb/"
+    else
+        BPATH="$2"
+    fi
     mkdir -p "$BPATH"
+    export SECONDS=0
+    IFS=' ' read -ra DATABASE <<< "$1"
     export KEEP_DAYS="30"
-
     export red="\e[1;31m"
     export creset="\e[0m"
 }
@@ -29,7 +32,8 @@ usage() {
     echo -e "Script usage\n\n\
     \t--help or -h: print this message\n\n\
     \tFirst arguement must be database list inside quotes even if only one database is specified\n\
-    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\"
+    \tSecond arguement is the backup path. If none is specified then the internal setting is used\n
+    \tExample 1: ./mysql_backup.sh \"database1 database2 database3\" /backup/path
     \tExample 2: ./mysql_backup.sh database"
 }
 
@@ -48,7 +52,7 @@ main() {
     cd /tmp # /tmp is a tmpfs filesystem on modern distrobutions, by default it is half the size of the total memory.
             # if the backup is larger than half the memory size, it will fail before completing (or start swapping).
     # create dump file
-    for db in $DATABASE; do
+    for db in "${DATABASE[@]}"; do
         FILE="${db}-$(date +%F).dump"
         mysqldump ${db} > "${FILE}"
         echo "gzipping ${FILE}... this may take some time"
