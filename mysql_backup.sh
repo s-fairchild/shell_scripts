@@ -40,23 +40,46 @@ usage() {
 elapsed_time() {
     MINUTES=$(echo "scale=2;$SECONDS/60" | bc -l)
     if [[ "$MINUTES" == 0 ]]; then
-        logger -t "mysql_backup.sh" "Completed in ${SECONDS} seconds"
+        logger -t "$0" "Completed in ${SECONDS} seconds"
         echo "Completed in ${SECONDS} seconds"
     else
-        logger -t "mysql_backup.sh" "Completed in ${MINUTES} minutes"
+        logger -t "$0" "Completed in ${MINUTES} minutes"
         echo "Completed in ${MINUTES} minutes"
     fi
 }
 
+rotate_daily() {
+    daily_count="$(( $(ls ${BPATH}/daily | wc -l) / 2 ))"
+    if [[ "$daily_count" -ge 2 ]]; then
+        find "${BPATH}/daily" -iname "*.dump" -mtime 2 -exec mv {} "${BPATH}/weekly" \; 
+        find "${BPATH}/daily" -mtime +1 -delete
+    fi
+}
+
+rotate_weekly() {
+    weekly_count="$(( $(ls ${BPATH}/weekly | wc -l) / 2 ))"
+    if [[ "$weekly_count" -ge 7 ]]; then
+        find "${BPATH}/weekly" -iname "*.dump" -mtime 7 -exec mv {} "${BPATH}/monthly" \; 
+        find "${BPATH}/weekly" -mtime -7 -delete
+    fi
+}
+
+rotate_monthly() {
+    monthly_count="$(( $(ls ${BPATH}/monthly | wc -l) / 2 ))"
+    if [[ "$monthly_count" -ge 30 ]]; then
+        find "${BPATH}/monthly" -iname "*.dump" -mtime 30 -exec mv {} "${BPATH}/yearly" \;
+        find "${BPATH}/monthly" -mtime +30 -delete
+    fi
+}
+
 rotate_files() {
-    echo -e "${red}Deleting files older than ${KEEP_DAYS} days in ${BPATH}${creset}"
-    find "${BPATH}" -mtime +"${KEEP_DAYS}" -print
-    echo -e "${red}Files shown will be deleted${creset}"
-    find "${BPATH}" -mtime +"${KEEP_DAYS}" -delete
-    logger -t "mysql_backup.sh" "Deleted files older than ${KEEP_DAYS} days in ${BPATH}"
-    cd - # Return to original directory
-    history -c # stop history from saving password if provided
-    elapsed_time
+    for d in daily weekly monthly yearly; do
+        mkdir -p "${BPATH}/${d}"
+    done
+    rotate_daily
+    rotate_weekly
+    rotate_monthly
+    logger -t "$0" "Files rotated in ${BPATH}"
 }
 
 make_backups() {
@@ -67,7 +90,7 @@ make_backups() {
         FILE="${db}-$(date +%F).dump"
         mysqldump ${db} > "${FILE}"
         echo "gzipping ${FILE}... this may take some time"
-        pigz -q ${FILE}
+        pigz -q "${FILE}"
         if [[ "$?" -eq 0 ]] && [[ -f "${FILE}.gz" ]]; then
             echo "Successfully compressed ${FILE}.gz"
             sha256sum "${FILE}.gz" > "${FILE}.gz.sha256"
@@ -86,8 +109,9 @@ if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ -z "$1" ]]; then
     usage
 else
     root_check
-    set_vars "$1"
+    set_vars "$1" "$2"
     make_backups
+    elapsed_time
 fi
 
 exit 0
